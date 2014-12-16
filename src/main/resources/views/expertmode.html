@@ -1,0 +1,23 @@
+<p data-th-if="${requestPath!=null}" data-th-replace="fragments/intro :: ${requestPath}"/>
+
+<form method="post"
+      data-th-action="${url + '/germ/' + requestPath}"
+      class="pure-form pure-form-stacked">
+    <fieldset>
+        <legend>Git fetch - <span class="smaller">download objects and refs from remote repository</span></legend>
+        <input type="hidden" name="cmd" value="fetch"/>
+        <input type="text" name="gitusername" id="gitusername" placeholder="Enter git username"
+               data-th-value="${gitusername!=null ? gitusername : ''}"/>
+        <input type="password" name="gitpassword" id="gitpassword" placeholder="Enter git password"/>
+        <input type="submit" value="Fetch remote origin" class="pure-button pure-button-primary"/>
+    </fieldset>
+</form>
+        
+<form method="post" data-th-action="${url + '/germ/' + requestPath}" class="pure-form pure-form-stacked">
+    <legend>Git reset - <span class="smaller">reset current HEAD to the specified state</span></legend>
+    <fieldset>
+        <input type="hidden" name="cmd" value="reset"/>
+        <input type="text" pattern=".{16,}" title="16 characters minimum" required="true" name="sha1" placeholder="Enter SHA-1"/>
+        <input type="submit" value="Reset to SHA-1" class="pure-button pure-button-primary"/>
+    </fieldset>
+</form>
