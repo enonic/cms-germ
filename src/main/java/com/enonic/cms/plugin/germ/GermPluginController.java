@@ -48,7 +48,7 @@ public class GermPluginController extends HttpController {
 
     public GermPluginController() throws Exception {
         setDisplayName("G.E.R.M - Git Enonic Release Management");
-        setUrlPatterns(new String[]{"/admin/site/[0-9]/germ.*"});
+        setUrlPatterns(new String[]{"/admin/site/[0-9]/germ.*","/admin/germ.*"});
         setPriority(10);
 
         pluginsFilenameFilter = new FilenameFilter() {
@@ -343,7 +343,7 @@ public class GermPluginController extends HttpController {
             context.setVariable("directory", folderWithPlugins);
             context.setVariable("gitDirectory", gitFolderWithPlugins);
             context.setVariable("originUrl", gitUtils.getRemoteOrigin(gitFolderWithPlugins));
-            context.setVariable("headCommit", repository.getConfig().getString("germ", "workspace", repository.getBranch()));
+            context.setVariable("headCommit", repository.getConfig().getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
             context.setVariable("checkoutfiles", gitUtils.getRepositoryFiles(folderWithPlugins, pluginsFilenameFilter));
 
         } catch (Exception e) {
@@ -364,7 +364,7 @@ public class GermPluginController extends HttpController {
             context.setVariable("directory", folderWithResources);
             context.setVariable("gitDirectory", gitFolderWithResources);
             context.setVariable("originUrl", gitUtils.getRemoteOrigin(gitFolderWithResources));
-            context.setVariable("headCommit", repository.getConfig().getString("germ", "workspace", repository.getBranch()));
+            context.setVariable("headCommit", repository.getConfig().getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
         } catch (Exception e) {
             addWarningMessage(e.getMessage());
         }

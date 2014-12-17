@@ -47,8 +47,14 @@ public class GitUtils {
         resetCommand.call();
 
         StoredConfig config = repository.getConfig();
-        config.setString("germ", "workspace", repository.getBranch(), sha1);
+        config.setString("germ", "workspace", replaceIllegalGitConfCharacters(repository.getBranch()), sha1);
         config.save();
+    }
+
+    /*This is because there are restrictions on variable names in .git/config file
+    * https://www.kernel.org/pub/software/scm/git/docs/git-config.html*/
+    public final String replaceIllegalGitConfCharacters(String confValue){
+        return new PrettyPathNameCreator(true).generatePrettyPathName(confValue);
     }
 
     public FetchResult fetch(File repositoryFolder, String username, String password)
