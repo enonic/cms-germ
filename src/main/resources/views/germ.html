@@ -12,7 +12,7 @@
 
     <div id="menu">
         <div class="pure-menu pure-menu-open">
-            <a id="germ-logo" class="pure-menu-heading" href="#">G.E.R.M</a>
+            <a id="germ-logo" class="pure-menu-heading" data-th-href="${url + '/germ'}">G.E.R.M</a>
             <ul data-th-replace="fragments/navigation :: top"/>
         </div>
     </div>
@@ -36,7 +36,7 @@
 
             <span data-th-if="${accessDenied}" data-th-include="fragments/login :: login-form"></span>
 
-            <div data-th-if="${requestPath!=null and not requestPath.isEmpty()}">
+            <div data-th-if="${!accessDenied and requestPath!=null and not requestPath.isEmpty()}">
                 <div data-th-replace="${requestPath}"/>
             </div>
         </div>

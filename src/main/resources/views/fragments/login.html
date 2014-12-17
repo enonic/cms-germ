@@ -1,7 +1,14 @@
-<form data-th-fragment="login-form">
-    <legend>Login required</legend>
-    <label for="username">Username:</label>
-    <input id="username" type="text"/>
-    <label for="password">Password:</label>
-    <input id="password" type="password"/>
-</form>
+<div data-th-fragment="login-form">
+    <form method="post"
+          data-th-action="${url + '/germ/' + requestPath}"
+          class="pure-form pure-form-stacked">
+        <fieldset>
+            <legend>Authentication</legend>
+            <input type="hidden" name="cmd" value="authenticate"/>
+            <input type="text" name="germusername" id="germusername" placeholder="Enter germ username"
+                   data-th-value="${germusername!=null ? germusername : ''}"/>
+            <input type="password" name="germpassword" id="germpassword" placeholder="Enter germ password"/>
+            <input type="submit" value="Authenticate" class="pure-button pure-button-primary"/>
+        </fieldset>
+    </form>
+</div>

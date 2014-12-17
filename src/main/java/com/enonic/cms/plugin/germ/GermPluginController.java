@@ -1,6 +1,7 @@
 package com.enonic.cms.plugin.germ;
 
 import com.enonic.cms.api.client.Client;
+import com.enonic.cms.api.client.ClientException;
 import com.enonic.cms.api.plugin.PluginConfig;
 import com.enonic.cms.api.plugin.PluginEnvironment;
 import com.enonic.cms.api.plugin.ext.http.HttpController;
@@ -48,7 +49,7 @@ public class GermPluginController extends HttpController {
 
     public GermPluginController() throws Exception {
         setDisplayName("G.E.R.M - Git Enonic Release Management");
-        setUrlPatterns(new String[]{"/admin/site/[0-9]/germ.*","/admin/germ.*"});
+        setUrlPatterns(new String[]{"/admin/site/[0-9]/germ.*"});
         setPriority(10);
 
         pluginsFilenameFilter = new FilenameFilter() {
@@ -82,7 +83,7 @@ public class GermPluginController extends HttpController {
 
     FilenameFilter pluginsFilenameFilter;
 
-    boolean needsAuthentication = false;
+    boolean needsAuthentication = true;
 
     String url = "";
 
@@ -108,9 +109,40 @@ public class GermPluginController extends HttpController {
     Logger LOG = LoggerFactory.getLogger(GermPluginController.class);
     static ConcurrentHashMap<String, List> messages = new ConcurrentHashMap<String, List>();
 
+    private void attemptAuthentication(){
+
+        String cmd = pluginEnvironment.getCurrentRequest().getParameter("cmd");
+
+        if (Strings.isNullOrEmpty(cmd) || !"authenticate".equalsIgnoreCase(cmd)){
+            return;
+        }
+
+        String germUsername = pluginEnvironment.getCurrentRequest().getParameter("germusername");
+        String germPassword = pluginEnvironment.getCurrentRequest().getParameter("germpassword");
+
+        if (Strings.isNullOrEmpty(germUsername) || Strings.isNullOrEmpty(germPassword)){
+            return;
+        }
+
+        try {
+            client.logout(false);
+            LOG.info("Try to log in {}/{}", germUsername,germPassword);
+            String username = client.login(germUsername, germPassword);
+            LOG.info("Logged in user {}",username);
+        }catch (Exception e){
+            addErrorMessage("Authentication failed");
+        }
+    }
 
     @Override
     public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        //Add multiple response messages with addInfoMessage(), addWarningMessage() or addErrorMessage();
+        List<ResponseMessage> responseMessages = new ArrayList<ResponseMessage>();
+        messages.put(pluginEnvironment.getCurrentSession().getId(), responseMessages);
+
+        if (needsAuthentication){
+            attemptAuthentication();
+        }
 
         String username = client.getUserName();
         Document userContext = client.getUserContext();
@@ -135,10 +167,6 @@ public class GermPluginController extends HttpController {
         //Set parameters on context to make them available in Thymeleaf html view
         WebContext context = new WebContext(request, response, request.getSession().getServletContext());
 
-        //Add multiple response messages with addInfoMessage(), addWarningMessage() or addErrorMessage();
-        List<ResponseMessage> responseMessages = new ArrayList<ResponseMessage>();
-        messages.put(pluginEnvironment.getCurrentSession().getId(), responseMessages);
-
         String url = extractUrlFromRequest();
 
         String requestPath = StringUtils.substringAfterLast(pluginEnvironment.getCurrentRequest().getRequestURI(), "/germ/");
@@ -149,10 +177,12 @@ public class GermPluginController extends HttpController {
             addErrorMessage("Access denied");
             context.setVariable("accessDenied", true);
         } else {
+            context.setVariable("accessDenied", false);
             addRequestPathContext(requestPath, context);
         }
 
         response.setContentType("text/html");
+
         context.setVariable("messages", messages.get(pluginEnvironment.getCurrentSession().getId()));
         messages.remove(pluginEnvironment.getCurrentSession().getId());
         try {
@@ -162,7 +192,6 @@ public class GermPluginController extends HttpController {
             addErrorMessage(e.getMessage());
             templateEngineProvider.get().process("errors/404", context, response.getWriter());
         }
-
     }
 
     public void runCmd(File folder, File repositoryFolder, WebContext context) {
