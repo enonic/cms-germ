@@ -49,7 +49,7 @@ public class GermPluginController extends HttpController {
 
     public GermPluginController() throws Exception {
         setDisplayName("G.E.R.M - Git Enonic Release Management");
-        setUrlPatterns(new String[]{"/admin/site/[0-9]/germ.*"});
+        setUrlPatterns(new String[]{"/admin/site/[\\d]*/germ.*"});
         setPriority(10);
 
         pluginsFilenameFilter = new FilenameFilter() {
