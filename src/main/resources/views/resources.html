@@ -6,6 +6,10 @@
     <section data-th-replace="fragments/git/remote :: remote-form"/>
 </span>
 
+<span data-th-if="${not #strings.isEmpty(gitDirectory)}">
+    <section data-th-replace="fragments/git/sparse-checkout :: sparse-checkout-form"/>
+</span>
+
 <span data-th-if="${remotebranches!=null and remotebranches.isEmpty()}">
     <section data-th-replace="fragments/git/fetch :: fetch-form"/>
 </span>

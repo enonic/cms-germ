@@ -1,0 +1,23 @@
+<section
+        data-th-fragment="sparse-checkout-form"
+        data-th-if="${repository!=null and repository.getDirectory().exists() and sparseCheckoutPath!=null}"
+        id="sparse-checkout">
+
+    <form method="post"
+          data-th-switch="${sparseCheckoutActivated}"
+          data-th-action="${url + '/germ/' + requestPath}" class="pure-form pure-form-stacked remote-form">
+        <legend>Sparse checkout - <span class="smaller" data-th-text="|only checkout files matching '${sparseCheckoutPath}' (pattern declared in default.properties)|"></span></legend>
+        <p data-th-text="${originUrl}"></p>
+        <fieldset data-th-case="false">
+            <input type="hidden" name="cmd" value="enablesparsecheckout"/>
+            <input type="text" readonly="true" data-th-value="${sparseCheckoutPath}" name="sparsecheckoutpath" class="smaller" required="true"/>
+            <input type="submit" value="Enable sparse checkout" class="pure-button pure-button-primary"/>
+        </fieldset>
+        <fieldset data-th-case="true">
+            <input type="hidden" name="cmd" value="disablesparsecheckout"/>
+            <input type="text" readonly="true"  data-th-value="${sparseCheckoutPath}" name="sparsecheckoutpath" class="smaller" required="true"/>
+            <input type="submit" value="Disable sparse checkout" class="pure-button pure-button-primary"/>
+            <!--<input type="url" name="originUrl" class="originUrl" readonly="true" data-th-value="${originUrl}"/>-->
+        </fieldset>
+    </form>
+</section>

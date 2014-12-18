@@ -1,5 +1,6 @@
 package com.enonic.cms.plugin.germ.utils;
 
+import com.enonic.cms.plugin.germ.model.RepoSettings;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import org.apache.commons.lang.StringUtils;
@@ -39,10 +40,23 @@ public class GitUtils {
         return Git.init().setDirectory(repositoryFolder).call();
     }
 
-    public void reset(File repositoryFolder, String sha1) throws IOException, GitAPIException{
+    public String getGitConfigString(File repositoryFolder, String section, String subsection, String name) throws IOException{
         Repository repository = getRepository(repositoryFolder);
+        StoredConfig config = repository.getConfig();
+        return config.getString(section,subsection,name);
+    }
+
+    public void setGitConfigString(File repositoryFolder, String section, String subsection, String name, String value) throws IOException{
+        Repository repository = getRepository(repositoryFolder);
+        StoredConfig config = repository.getConfig();
+        config.setString(section,subsection,name,value);
+    }
+
+    public void reset(RepoSettings repoSettings, String sha1) throws IOException, GitAPIException{
+        Repository repository = getRepository(repoSettings.getGitFolder());
         ResetCommand resetCommand = new Git(repository).reset();
         resetCommand.setMode(ResetCommand.ResetType.HARD);
+        //resetCommand.addPath(repoSettings.getSparseCheckoutPath());
         resetCommand.setRef(sha1);
         resetCommand.call();
 

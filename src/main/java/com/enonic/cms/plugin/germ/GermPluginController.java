@@ -5,6 +5,7 @@ import com.enonic.cms.api.client.ClientException;
 import com.enonic.cms.api.plugin.PluginConfig;
 import com.enonic.cms.api.plugin.PluginEnvironment;
 import com.enonic.cms.api.plugin.ext.http.HttpController;
+import com.enonic.cms.plugin.germ.model.RepoSettings;
 import com.enonic.cms.plugin.germ.utils.GitUtils;
 import com.enonic.cms.plugin.germ.utils.Helper;
 import com.enonic.cms.plugin.germ.utils.ResponseMessage;
@@ -16,6 +17,7 @@ import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.FetchResult;
 import org.jdom.Document;
@@ -34,6 +36,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -64,14 +67,22 @@ public class GermPluginController extends HttpController {
         };
     }
 
-    File folderWithResources;
+    RepoSettings pluginRepoSettings = new RepoSettings();
+    RepoSettings resourcesRepoSettings = new RepoSettings();
+
+    /*File folderWithResources;
     File folderWithPlugins;
 
     File gitFolderWithResources;
     File gitFolderWithPlugins;
 
+    String sparseCheckoutPluginsPath;
+    String sparseCheckoutResourcesPath;*/
+
     String allowedAdminGroup;
     String allowedUserGroup;
+
+
 
     @Autowired
     Client client;
@@ -80,29 +91,32 @@ public class GermPluginController extends HttpController {
     PluginEnvironment pluginEnvironment;
 
     PluginConfig pluginConfig;
-
     FilenameFilter pluginsFilenameFilter;
 
     boolean needsAuthentication = true;
 
+    //TODO: This should perhaps not be global
     String url = "";
 
     @Autowired
     public void setPluginConfig(List<PluginConfig> pluginConfig) {
         //TODO: Strange hack with List<PluginConfig> here, srs is investigating
         this.pluginConfig = pluginConfig.get(0);
-        folderWithResources = new File(this.pluginConfig.getString("folderWithResources"));
-        folderWithPlugins = new File(this.pluginConfig.getString("folderWithPlugins"));
-        gitFolderWithResources = new File(folderWithResources + "/.git");
-        gitFolderWithPlugins = new File(folderWithPlugins + "/.git");
         this.allowedAdminGroup = this.pluginConfig.getString("allowedAdminGroup");
         this.allowedUserGroup = this.pluginConfig.getString("allowedUserGroup");
+
+        resourcesRepoSettings.setFolder(new File(this.pluginConfig.getString("folderWithResources")));
+        resourcesRepoSettings.setGitFolder(new File(resourcesRepoSettings.getFolder() + "/.git"));
+        resourcesRepoSettings.setSparseCheckoutPath(this.pluginConfig.getString("sparseCheckoutResourcesPath"));
+
+        pluginRepoSettings.setFolder(new File(this.pluginConfig.getString("folderWithPlugins")));
+        pluginRepoSettings.setGitFolder(new File(pluginRepoSettings.getFolder()+ "/.git"));
+        pluginRepoSettings.setSparseCheckoutPath(this.pluginConfig.getString("sparseCheckoutPluginPath"));
     }
 
     @Autowired
     private ApplicationContext applicationContext;
 
-    //TODO: Check with srs about templateEngineProvider, TemplateEngine is expensive and should only be instanciated once.
     @Autowired
     private TemplateEngineProvider templateEngineProvider;
 
@@ -194,16 +208,16 @@ public class GermPluginController extends HttpController {
         }
     }
 
-    public void runCmd(File folder, File repositoryFolder, WebContext context) {
+    public void runCmd(Repository repository, RepoSettings repoSettings, WebContext context) {
         GitUtils gitUtils = new GitUtils();
         String cmd = pluginEnvironment.getCurrentRequest().getParameter("cmd");
         try {
             if (!Strings.isNullOrEmpty(cmd)) {
                 if ("init".equals(cmd)) {
-                    gitUtils.initGitRepository(folder);
-                    addInfoMessage("Git repository successfully initiated in " + repositoryFolder);
+                    gitUtils.initGitRepository(repoSettings.getFolder());
+                    addInfoMessage("Git repository successfully initiated in " + repoSettings.getGitFolder());
                 } else if ("rmremote".equals(cmd)) {
-                    gitUtils.removeRemote(repositoryFolder);
+                    gitUtils.removeRemote(repoSettings.getGitFolder());
                     addInfoMessage("Remote origin successfully removed");
                 } else if ("addremote".equals(cmd)) {
                     String originUrl = pluginEnvironment.getCurrentRequest().getParameter("originUrl");
@@ -211,12 +225,12 @@ public class GermPluginController extends HttpController {
                         addWarningMessage("OriginUrl missing");
                         return;
                     }
-                    gitUtils.addRemote(repositoryFolder, originUrl);
+                    gitUtils.addRemote(repoSettings.getGitFolder(), originUrl);
                     addInfoMessage("Remote origin " + originUrl + " successfully added");
                 } else if ("fetch".equals(cmd)) {
                     String gitusername = pluginEnvironment.getCurrentRequest().getParameter("gitusername");
                     String gitpassword = pluginEnvironment.getCurrentRequest().getParameter("gitpassword");
-                    FetchResult fetchResult = gitUtils.fetch(repositoryFolder, gitusername, gitpassword);
+                    FetchResult fetchResult = gitUtils.fetch(repoSettings.getGitFolder(), gitusername, gitpassword);
                     if (fetchResult != null && fetchResult.getMessages().length() > 0) {
                         addInfoMessage(fetchResult.getMessages());
                     }
@@ -228,7 +242,7 @@ public class GermPluginController extends HttpController {
                         return;
                     }
                     try {
-                        CheckoutResult checkoutResult = gitUtils.checkoutOrCreateBranch(branch, repositoryFolder);
+                        CheckoutResult checkoutResult = gitUtils.checkoutOrCreateBranch(branch, repoSettings.getGitFolder());
                         context.setVariable("checkoutResult", checkoutResult);
                         addInfoMessage("Successfully checked out " + branch);
                     } catch (Exception e) {
@@ -247,7 +261,7 @@ public class GermPluginController extends HttpController {
                     }
 
                     try {
-                        CheckoutResult checkoutResult = gitUtils.checkoutFile(checkoutfile, checkoutfile_sha1, repositoryFolder);
+                        CheckoutResult checkoutResult = gitUtils.checkoutFile(checkoutfile, checkoutfile_sha1, repoSettings.getGitFolder());
                         context.setVariable("checkoutResult", checkoutResult);
                         addInfoMessage("Successfully checked out " + checkoutfile);
                     } catch (Exception e) {
@@ -255,21 +269,47 @@ public class GermPluginController extends HttpController {
                     }
                 } else if ("rebase".equals(cmd)) {
                     try {
-                        RebaseResult rebaseResult = gitUtils.rebase(repositoryFolder);
+                        RebaseResult rebaseResult = gitUtils.rebase(repoSettings.getGitFolder());
                         context.setVariable("rebaseResult", rebaseResult);
                     } catch (Exception e) {
                         addErrorMessage(e.getMessage());
                     }
                 } else if ("clean".equals(cmd)) {
-                    Set<String> cleanedFiles = gitUtils.clean(repositoryFolder);
+                    Set<String> cleanedFiles = gitUtils.clean(repoSettings.getGitFolder());
                     context.setVariable("cleanedFiles", cleanedFiles);
                 } else if ("reset".equals(cmd)) {
                     String sha1 = pluginEnvironment.getCurrentRequest().getParameter("sha1");
                     if (Strings.isNullOrEmpty(sha1)) {
                         addWarningMessage("SHA-1 is not set, cannot reset.");
                     }
-                    gitUtils.reset(repositoryFolder, sha1);
+                    gitUtils.reset(repoSettings, sha1);
                     addInfoMessage("Successfully reset to " + sha1);
+                } else if ("enablesparsecheckout".equals(cmd)){
+                    LOG.info("Enable sparse checkout for {}", repoSettings.getGitFolder());
+                    StoredConfig config = repository.getConfig();
+                    config.setBoolean("core",null,"sparsecheckout",true);
+                    try {
+                        Path infoFolder = FileSystems.getDefault().getPath(repoSettings.getGitFolder()+"/info");
+                        Path sparsecheckoutFile = FileSystems.getDefault().getPath(repoSettings.getGitFolder()+"/info/sparse-checkout");
+                        if (!Files.isDirectory(infoFolder,LinkOption.NOFOLLOW_LINKS)){
+                            infoFolder = Files.createDirectory(infoFolder);
+                            LOG.info("Created directory {}", infoFolder.toAbsolutePath());
+                        }
+                        if (!Files.exists(sparsecheckoutFile)){
+                            Files.write(sparsecheckoutFile,repoSettings.getSparseCheckoutPath().getBytes());
+                            LOG.info("Created file {}", sparsecheckoutFile.toAbsolutePath());
+                        }
+                        config.save();
+                    }catch (Exception e){
+                        LOG.error("Exception while enabeling sparse-checkout: {}", e);
+                    }
+                    addInfoMessage("Enabled sparse-checkout for " + repoSettings.getGitFolder());
+                }else if ("disablesparsecheckout".equals(cmd)){
+                    LOG.info("Disable sparse checkout for {}", repoSettings.getGitFolder());
+                    StoredConfig config = repository.getConfig();
+                    config.setBoolean("core",null,"sparsecheckout",false);
+                    config.save();
+                    addInfoMessage("Disabled sparse-checkout for " + repoSettings.getGitFolder());
                 }
             }
         } catch (Exception e) {
@@ -316,16 +356,16 @@ public class GermPluginController extends HttpController {
         }
 
         try {
-            context.setVariable("resourcesRepository", gitUtils.getRepository(gitFolderWithResources));
-            context.setVariable("resourcesRemoteUrl", gitUtils.getRemoteOrigin(gitFolderWithResources));
-            context.setVariable("resourcesRemoteBranches", gitUtils.getRemoteBranches(gitFolderWithResources));
+            context.setVariable("resourcesRepository", gitUtils.getRepository(resourcesRepoSettings.getGitFolder()));
+            context.setVariable("resourcesRemoteUrl", gitUtils.getRemoteOrigin(resourcesRepoSettings.getGitFolder()));
+            context.setVariable("resourcesRemoteBranches", gitUtils.getRemoteBranches(resourcesRepoSettings.getGitFolder()));
         } catch (Exception e) {
             LOG.info(e.getMessage());
         }
         try {
-            context.setVariable("pluginsRepository", gitUtils.getRepository(gitFolderWithPlugins));
-            context.setVariable("pluginsRemoteUrl", gitUtils.getRemoteOrigin(gitFolderWithPlugins));
-            context.setVariable("pluginsRemoteBranches", gitUtils.getRemoteBranches(gitFolderWithPlugins));
+            context.setVariable("pluginsRepository", gitUtils.getRepository(pluginRepoSettings.getGitFolder()));
+            context.setVariable("pluginsRemoteUrl", gitUtils.getRemoteOrigin(pluginRepoSettings.getGitFolder()));
+            context.setVariable("pluginsRemoteBranches", gitUtils.getRemoteBranches(pluginRepoSettings.getGitFolder()));
         } catch (Exception e) {
             LOG.info(e.getMessage());
         }
@@ -350,13 +390,13 @@ public class GermPluginController extends HttpController {
     public void pluginsFiles(WebContext context) {
         GitUtils gitUtils = new GitUtils();
         plugins(context);
-        context.setVariable("files", gitUtils.getRepositoryFiles(folderWithPlugins));
+        context.setVariable("files", gitUtils.getRepositoryFiles(pluginRepoSettings.getFolder()));
     }
 
     public void resourcesFiles(WebContext context) {
         GitUtils gitUtils = new GitUtils();
         resources(context);
-        context.setVariable("files", gitUtils.getRepositoryFiles(folderWithResources));
+        context.setVariable("files", gitUtils.getRepositoryFiles(resourcesRepoSettings.getFolder()));
     }
 
 
@@ -364,16 +404,20 @@ public class GermPluginController extends HttpController {
         GitUtils gitUtils = new GitUtils();
 
         try {
-            runCmd(folderWithPlugins, gitFolderWithPlugins, context);
-            Repository repository = gitUtils.getRepository(gitFolderWithPlugins);
-            addCommonContext(context, gitFolderWithPlugins);
-            context.setVariable("repository", gitUtils.getRepository(gitFolderWithPlugins));
+            Repository repository = gitUtils.getRepository(pluginRepoSettings.getGitFolder());
+            runCmd(repository, pluginRepoSettings, context);
+            addCommonContext(context, pluginRepoSettings.getGitFolder());
+
+            StoredConfig config = repository.getConfig();
+            context.setVariable("repository", repository);
             context.setVariable("method", "plugins");
-            context.setVariable("directory", folderWithPlugins);
-            context.setVariable("gitDirectory", gitFolderWithPlugins);
-            context.setVariable("originUrl", gitUtils.getRemoteOrigin(gitFolderWithPlugins));
-            context.setVariable("headCommit", repository.getConfig().getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
-            context.setVariable("checkoutfiles", gitUtils.getRepositoryFiles(folderWithPlugins, pluginsFilenameFilter));
+            context.setVariable("directory", pluginRepoSettings.getFolder());
+            context.setVariable("gitDirectory", pluginRepoSettings.getGitFolder());
+            context.setVariable("originUrl", gitUtils.getRemoteOrigin(pluginRepoSettings.getGitFolder()));
+            context.setVariable("headCommit", config.getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
+            context.setVariable("checkoutfiles", gitUtils.getRepositoryFiles(pluginRepoSettings.getFolder(), pluginsFilenameFilter));
+            context.setVariable("sparseCheckoutPath", pluginRepoSettings.getSparseCheckoutPath());
+            context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));
 
         } catch (Exception e) {
             addErrorMessage(e.getMessage());
@@ -384,16 +428,20 @@ public class GermPluginController extends HttpController {
         GitUtils gitUtils = new GitUtils();
 
         try {
-            Repository repository = gitUtils.getRepository(gitFolderWithResources);
-            runCmd(folderWithResources, gitFolderWithResources, context);
-            addCommonContext(context, gitFolderWithResources);
+            Repository repository = gitUtils.getRepository(resourcesRepoSettings.getGitFolder());
 
-            context.setVariable("repository", gitUtils.getRepository(gitFolderWithResources));
+            runCmd(repository,resourcesRepoSettings, context);
+            addCommonContext(context, resourcesRepoSettings.getGitFolder());
+
+            StoredConfig config = repository.getConfig();
+            context.setVariable("repository", gitUtils.getRepository(resourcesRepoSettings.getGitFolder()));
             context.setVariable("method", "resources");
-            context.setVariable("directory", folderWithResources);
-            context.setVariable("gitDirectory", gitFolderWithResources);
-            context.setVariable("originUrl", gitUtils.getRemoteOrigin(gitFolderWithResources));
-            context.setVariable("headCommit", repository.getConfig().getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
+            context.setVariable("directory", resourcesRepoSettings.getFolder());
+            context.setVariable("gitDirectory", resourcesRepoSettings.getGitFolder());
+            context.setVariable("originUrl", gitUtils.getRemoteOrigin(resourcesRepoSettings.getGitFolder()));
+            context.setVariable("headCommit", config.getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
+            context.setVariable("sparseCheckoutPath", resourcesRepoSettings.getSparseCheckoutPath());
+            context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));
         } catch (Exception e) {
             addWarningMessage(e.getMessage());
         }
@@ -402,13 +450,13 @@ public class GermPluginController extends HttpController {
     public void expertmode(WebContext context) throws Exception{
         GitUtils gitUtils = new GitUtils();
         //Repository repository = gitUtils.getRepository(gitFolderWithResources);
-        context.setVariable("originUrl", gitUtils.getRemoteOrigin(gitFolderWithResources));
+        context.setVariable("originUrl", gitUtils.getRemoteOrigin(resourcesRepoSettings.getGitFolder()));
 
         String cmd = pluginEnvironment.getCurrentRequest().getParameter("cmd");
         if ("fetch".equals(cmd)) {
             String gitusername = pluginEnvironment.getCurrentRequest().getParameter("gitusername");
             String gitpassword = pluginEnvironment.getCurrentRequest().getParameter("gitpassword");
-            FetchResult fetchResult = gitUtils.fetch(gitFolderWithResources, gitusername, gitpassword);
+            FetchResult fetchResult = gitUtils.fetch(resourcesRepoSettings.getGitFolder(), gitusername, gitpassword);
             if (fetchResult != null && fetchResult.getMessages().length() > 0) {
                 addInfoMessage(fetchResult.getMessages());
             }
@@ -420,7 +468,7 @@ public class GermPluginController extends HttpController {
             }else{
                 addInfoMessage("SHA-1 is " + sha1);
             }
-            gitUtils.reset(gitFolderWithResources, sha1);
+            gitUtils.reset(resourcesRepoSettings, sha1);
             addInfoMessage("Successfully reset to " + sha1);
         }
     }
