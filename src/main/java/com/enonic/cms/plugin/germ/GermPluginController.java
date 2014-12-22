@@ -9,17 +9,20 @@ import com.enonic.cms.plugin.germ.model.RepoSettings;
 import com.enonic.cms.plugin.germ.utils.GitUtils;
 import com.enonic.cms.plugin.germ.utils.Helper;
 import com.enonic.cms.plugin.germ.utils.ResponseMessage;
+import com.enonic.cms.plugin.germ.utils.systemcommand.SystemCommandExecutor;
 import com.enonic.cms.plugin.germ.view.TemplateEngineProvider;
 import com.google.common.base.Strings;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.Status;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.FetchResult;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.xpath.XPath;
@@ -70,6 +73,8 @@ public class GermPluginController extends HttpController {
     RepoSettings pluginRepoSettings = new RepoSettings();
     RepoSettings resourcesRepoSettings = new RepoSettings();
 
+    String pathToGit;
+
     /*File folderWithResources;
     File folderWithPlugins;
 
@@ -112,6 +117,8 @@ public class GermPluginController extends HttpController {
         pluginRepoSettings.setFolder(new File(this.pluginConfig.getString("folderWithPlugins")));
         pluginRepoSettings.setGitFolder(new File(pluginRepoSettings.getFolder()+ "/.git"));
         pluginRepoSettings.setSparseCheckoutPath(this.pluginConfig.getString("sparseCheckoutPluginPath"));
+
+        pathToGit = this.pluginConfig.getString("pathToGit");
     }
 
     @Autowired
@@ -242,10 +249,31 @@ public class GermPluginController extends HttpController {
                         return;
                     }
                     try {
-                        CheckoutResult checkoutResult = gitUtils.checkoutOrCreateBranch(branch, repoSettings.getGitFolder());
-                        context.setVariable("checkoutResult", checkoutResult);
-                        addInfoMessage("Successfully checked out " + branch);
+                        LOG.info("Check wether to do normal or sparse checkout");
+                        if (repository.getConfig().getBoolean("core",null,"sparsecheckout", false)){
+                            LOG.info("System command checkout");
+                            List<String> command = new ArrayList<String>();
+                            command.add("cmd.exe");
+                            command.add("/c");
+                            command.add("cd " + repoSettings.getFolder() + " && "+ pathToGit + " checkout -f -B" + branch);
+                            SystemCommandExecutor commandExecutor = new SystemCommandExecutor(command);
+                            int result = commandExecutor.executeCommand();
+
+                            // get the stdout and stderr from the command that was run
+                            StringBuilder stdout = commandExecutor.getStandardOutputFromCommand();
+                            StringBuilder stderr = commandExecutor.getStandardErrorFromCommand();
+
+                            LOG.info("The numeric result of the command was {}",result);
+                            LOG.info("Std.out: {}",stdout);
+                            LOG.info("Std.err: {}",stderr);
+                        }else{
+                            LOG.info("Normal checkout with jgit");
+                            CheckoutResult checkoutResult = gitUtils.checkoutOrCreateBranch(branch, repoSettings.getGitFolder());
+                            context.setVariable("checkoutResult", checkoutResult);
+                            addInfoMessage("Successfully checked out " + branch);
+                        }
                     } catch (Exception e) {
+                        LOG.error("Exception {}",e);
                         addErrorMessage(e.getMessage());
                     }
                 } else if ("checkoutfile".equals(cmd)) {
