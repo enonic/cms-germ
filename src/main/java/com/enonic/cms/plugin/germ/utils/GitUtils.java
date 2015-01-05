@@ -7,12 +7,15 @@ import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefAlreadyExistsException;
+import org.eclipse.jgit.internal.storage.file.WindowCache;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.transport.*;
+import org.eclipse.jgit.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,20 +39,33 @@ public class GitUtils {
         return Git.open(repositoryFolder);
     }
 
-    public Git initGitRepository(File repositoryFolder) throws GitAPIException {
-        return Git.init().setDirectory(repositoryFolder).call();
+    public void initGitRepository(File repositoryFolder) throws GitAPIException {
+        Git git = Git.init().setDirectory(repositoryFolder).call();
+        WindowCacheConfig windowCacheConfig = new WindowCacheConfig();
+        windowCacheConfig.setPackedGitMMAP(false);
+        windowCacheConfig.install();
+        git.close();
+    }
+
+    public void deleteRepository(File repositoryFolder) throws GitAPIException, IOException {
+        Repository repository = getRepository(repositoryFolder);
+        repository.close();
+        FileUtils.delete(repositoryFolder, FileUtils.RECURSIVE);
     }
 
     public String getGitConfigString(File repositoryFolder, String section, String subsection, String name) throws IOException{
         Repository repository = getRepository(repositoryFolder);
         StoredConfig config = repository.getConfig();
-        return config.getString(section,subsection,name);
+        String configString = config.getString(section,subsection,name);
+        repository.close();
+        return configString;
     }
 
     public void setGitConfigString(File repositoryFolder, String section, String subsection, String name, String value) throws IOException{
         Repository repository = getRepository(repositoryFolder);
         StoredConfig config = repository.getConfig();
         config.setString(section,subsection,name,value);
+        repository.close();
     }
 
     public void reset(RepoSettings repoSettings, String sha1) throws IOException, GitAPIException{
@@ -63,6 +79,7 @@ public class GitUtils {
         StoredConfig config = repository.getConfig();
         config.setString("germ", "workspace", replaceIllegalGitConfCharacters(repository.getBranch()), sha1);
         config.save();
+        repository.close();
     }
 
     /*This is because there are restrictions on variable names in .git/config file
@@ -96,7 +113,7 @@ public class GitUtils {
         }else{
             fetchResult  = fetchCommand.call();
         }
-
+        repository.close();
         return fetchResult;
     }
 
@@ -111,10 +128,12 @@ public class GitUtils {
         }catch (GitAPIException e){
             LOG.error(e.getMessage());
         }
+        git.close();
         return checkoutCommand.getResult();
     }
 
     public CheckoutResult checkoutOrCreateBranch(String branch, File repositoryFolder) throws GitAPIException, IOException{
+        CheckoutResult checkoutResult = null;
         GitUtils gitUtils = new GitUtils();
         Git git = gitUtils.getGitInstance(repositoryFolder);
         CreateBranchCommand createBranchCommand = git.branchCreate();
@@ -128,7 +147,12 @@ public class GitUtils {
         }catch (RefAlreadyExistsException e){
             LOG.info("Branch already exist, do checkout.");
         }
-        CheckoutResult checkoutResult = gitUtils.checkoutBranch(branch,repositoryFolder);
+        try {
+            checkoutResult = gitUtils.checkoutBranch(branch,repositoryFolder);
+        }catch (Exception e){
+            LOG.error("Exception in checkoutBranch: {}", e);
+        }
+        git.close();
         return checkoutResult;
     }
 
@@ -145,6 +169,7 @@ public class GitUtils {
         }catch (GitAPIException e){
             LOG.error(e.getMessage());
         }
+        git.close();
         return checkoutCommand.getResult();
     }
 
@@ -166,6 +191,7 @@ public class GitUtils {
                 .call();
 
         RevCommit[] allCommits = Iterables.toArray(allLogs, RevCommit.class);
+        repository.close();
 
         return allCommits;
     }
@@ -192,6 +218,7 @@ public class GitUtils {
         walk.dispose();
 
         RevCommit[] allCommits = Iterables.toArray(commits, RevCommit.class);
+        repository.close();
 
         return allCommits;
     }
@@ -202,6 +229,7 @@ public class GitUtils {
         config.setString("remote", "origin", "url", originUrl);
         config.setString("remote", "origin", "fetch", "+refs/heads/*:refs/remotes/origin/*");
         config.save();
+        repository.close();
     }
 
     public void removeRemote(File repositoryFolder) throws IOException {
@@ -210,6 +238,7 @@ public class GitUtils {
         config.unset("remote", "origin", "url");
         //config.unset("remote", "origin", "fetch");
         config.save();
+        repository.close();
     }
 
     public String getRemoteOrigin(File repositoryFolder) throws IOException {
@@ -218,15 +247,20 @@ public class GitUtils {
         Set<String> remotes = config.getSubsections("remote");
         for (String remote : remotes) {
             if ("origin".equals(remote)) {
-                return config.getString("remote", "origin", "url");
+                String remoteOrigin = config.getString("remote", "origin", "url");
+                repository.close();
+                return remoteOrigin;
             }
         }
+        repository.close();
         return null;
     }
 
     public Set<String> clean(File repositoryFolder) throws GitAPIException, IOException{
         Git git = getGitInstance(repositoryFolder);
-        return git.clean().setCleanDirectories(true).call();
+        Set<String> result = git.clean().setCleanDirectories(true).call();
+        git.close();
+        return result;
     }
 
     public RebaseResult rebase(File repositoryFolder) throws GitAPIException, IOException{
@@ -234,6 +268,7 @@ public class GitUtils {
         RebaseCommand rebaseCommand = git.rebase();
         rebaseCommand.setUpstream("HEAD");
         RebaseResult rebaseResult = rebaseCommand.call();
+        git.close();
         return rebaseResult;
     }
       
@@ -243,14 +278,17 @@ public class GitUtils {
         if (!repository.getDirectory().exists()) {
             throw new IOException("No git repository exists.");
         }
+        Status status = new Git(repository).status().call();
+        repository.close();
 
-        return new Git(repository).status().call();
+        return status;
     }
 
     public List<Ref> getRemoteBranches(File repositoryFolder) throws Exception{
         Git git = getGitInstance(repositoryFolder);
         ListBranchCommand listBranchCommand = git.branchList();
         List<Ref> remotebranches = listBranchCommand.setListMode(ListBranchCommand.ListMode.REMOTE).call();
+        git.close();
         return remotebranches;
     }
 
@@ -258,6 +296,7 @@ public class GitUtils {
         Git git = getGitInstance(repositoryFolder);
         ListBranchCommand listBranchCommand = git.branchList();
         List<Ref> localbranches = listBranchCommand.call();
+        git.close();
         return localbranches;
     }
 

@@ -20,4 +20,10 @@
             <!--<input type="url" name="originUrl" class="originUrl" readonly="true" data-th-value="${originUrl}"/>-->
         </fieldset>
     </form>
+    <form method="post"
+          data-th-action="${url + '/germ/' + requestPath}" class="pure-form pure-form-stacked">
+        <legend>Delete .git folder- <span class="smaller">delete git repository. This will not affect checked out files.</span></legend>
+        <input type="hidden" name="cmd" value="deleterepo"/>
+        <input type="submit" value="Delete git repository" class="pure-button pure-button-primary"/>
+    </form>
 </section>

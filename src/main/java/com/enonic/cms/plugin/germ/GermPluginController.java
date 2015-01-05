@@ -1,7 +1,6 @@
 package com.enonic.cms.plugin.germ;
 
 import com.enonic.cms.api.client.Client;
-import com.enonic.cms.api.client.ClientException;
 import com.enonic.cms.api.plugin.PluginConfig;
 import com.enonic.cms.api.plugin.PluginEnvironment;
 import com.enonic.cms.api.plugin.ext.http.HttpController;
@@ -18,11 +17,7 @@ import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.FetchResult;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.xpath.XPath;
@@ -223,6 +218,9 @@ public class GermPluginController extends HttpController {
                 if ("init".equals(cmd)) {
                     gitUtils.initGitRepository(repoSettings.getFolder());
                     addInfoMessage("Git repository successfully initiated in " + repoSettings.getGitFolder());
+                }else if ("deleterepo".equals(cmd)) {
+                    gitUtils.deleteRepository(repoSettings.getGitFolder());
+                    addInfoMessage("Git repository successfully deleted");
                 } else if ("rmremote".equals(cmd)) {
                     gitUtils.removeRemote(repoSettings.getGitFolder());
                     addInfoMessage("Remote origin successfully removed");
@@ -252,6 +250,7 @@ public class GermPluginController extends HttpController {
                         LOG.info("Check wether to do normal or sparse checkout");
                         if (repository.getConfig().getBoolean("core",null,"sparsecheckout", false)){
                             LOG.info("System command checkout");
+                            branch = StringUtils.substringAfterLast(branch,"/");
                             List<String> command = new ArrayList<String>();
                             command.add("cmd.exe");
                             command.add("/c");
