@@ -3,14 +3,14 @@
     data-th-if="${commits!=null}"
     id="git-commits">
 
-    <table class="pure-table pure-table-bordered pure-table-striped commits">
+    <table id="commits" class="pure-table pure-table-bordered pure-table-striped commits">
         <thead>
         <tr>
             <th>Sha1</th>
             <th>Time</th>
             <th>Committer name</th>
             <th>Committer e-mail</th>
-            <th>Comment</th>
+            <th class="comment">Comment</th>
         </tr>
         </thead>
         <tr data-th-each="commit : ${commits}"
@@ -31,4 +31,34 @@
             <td data-th-text="${commit.getFullMessage()}">No commit message</td>
         </tr>
     </table>
+    <script type="text/javascript">
+        var s,
+        JiraLinks = {
+            settings: {
+                jiraUrl: 'http://issues',
+                commitsComment: document.getElementById('commits')
+            },
+
+            init: function(){
+                s = this.settings;
+                this.bindUIActions();
+            },
+
+            bindUIActions: function(){
+                s.commitsComment.addEventListener("click",function(){
+                    JiraLinks.resolveJiraLinks();
+                });
+            },
+
+            resolveJiraLinks: function(){
+                alert('get jira links');
+            }
+        }
+
+        if (addEventListener in document) { // use W3C standard method
+            document.addEventListener('load', JiraLinks.init(), false);
+        } else { // fall back to traditional method
+            document.onload = JiraLinks.init();
+        }
+    </script>
 </section>
