@@ -1,6 +1,7 @@
 package com.enonic.cms.plugin.germ.utils;
 
 import com.enonic.cms.plugin.germ.model.RepoSettings;
+import com.enonic.cms.plugin.germ.utils.systemcommand.SystemCommandExecutor;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import org.apache.commons.lang.StringUtils;
@@ -68,14 +69,27 @@ public class GitUtils {
         repository.close();
     }
 
-    public void reset(RepoSettings repoSettings, String sha1) throws IOException, GitAPIException{
+    public void reset(RepoSettings repoSettings, String sha1, String pathToGit) throws IOException, GitAPIException, InterruptedException{
         Repository repository = getRepository(repoSettings.getGitFolder());
-        ResetCommand resetCommand = new Git(repository).reset();
-        resetCommand.setMode(ResetCommand.ResetType.HARD);
-        //resetCommand.addPath(repoSettings.getSparseCheckoutPath());
-        resetCommand.setRef(sha1);
-        resetCommand.call();
-
+        if (repository.getConfig().getBoolean("core",null,"sparsecheckout", false)){
+            List<String> command = new ArrayList<String>();
+            command.add("cmd.exe");
+            command.add("/c");
+            command.add("cd " + repoSettings.getFolder() + " && "+ pathToGit + " reset --hard " + sha1);
+            SystemCommandExecutor commandExecutor = new SystemCommandExecutor(command);
+            int result = commandExecutor.executeCommand();
+            // get the stdout and stderr from the command that was run
+            StringBuilder stdout = commandExecutor.getStandardOutputFromCommand();
+            StringBuilder stderr = commandExecutor.getStandardErrorFromCommand();
+            LOG.info(stdout!=null ? stdout.toString():"");
+            LOG.error(stderr!=null?stderr.toString():"");
+        }else{
+            ResetCommand resetCommand = new Git(repository).reset();
+            resetCommand.setMode(ResetCommand.ResetType.HARD);
+            //resetCommand.addPath(repoSettings.getSparseCheckoutPath());
+            resetCommand.setRef(sha1);
+            resetCommand.call();
+        }
         StoredConfig config = repository.getConfig();
         config.setString("germ", "workspace", replaceIllegalGitConfCharacters(repository.getBranch()), sha1);
         config.save();

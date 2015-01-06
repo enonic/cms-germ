@@ -35,6 +35,9 @@ import java.io.FilenameFilter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.*;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -69,16 +72,6 @@ public class GermPluginController extends HttpController {
     RepoSettings resourcesRepoSettings = new RepoSettings();
 
     String pathToGit;
-
-    /*File folderWithResources;
-    File folderWithPlugins;
-
-    File gitFolderWithResources;
-    File gitFolderWithPlugins;
-
-    String sparseCheckoutPluginsPath;
-    String sparseCheckoutResourcesPath;*/
-
     String allowedAdminGroup;
     String allowedUserGroup;
 
@@ -254,7 +247,7 @@ public class GermPluginController extends HttpController {
                             List<String> command = new ArrayList<String>();
                             command.add("cmd.exe");
                             command.add("/c");
-                            command.add("cd " + repoSettings.getFolder() + " && "+ pathToGit + " checkout -f -B" + branch);
+                            command.add("cd " + repoSettings.getFolder() + " && "+ pathToGit + " checkout -f " + branch);
                             SystemCommandExecutor commandExecutor = new SystemCommandExecutor(command);
                             int result = commandExecutor.executeCommand();
 
@@ -309,7 +302,9 @@ public class GermPluginController extends HttpController {
                     if (Strings.isNullOrEmpty(sha1)) {
                         addWarningMessage("SHA-1 is not set, cannot reset.");
                     }
-                    gitUtils.reset(repoSettings, sha1);
+
+                    gitUtils.reset(repoSettings, sha1, pathToGit);
+
                     addInfoMessage("Successfully reset to " + sha1);
                 } else if ("enablesparsecheckout".equals(cmd)){
                     LOG.info("Enable sparse checkout for {}", repoSettings.getGitFolder());
@@ -317,8 +312,12 @@ public class GermPluginController extends HttpController {
                     config.setBoolean("core",null,"sparsecheckout",true);
                     try {
                         Path infoFolder = FileSystems.getDefault().getPath(repoSettings.getGitFolder()+"/info");
+
                         Path sparsecheckoutFile = FileSystems.getDefault().getPath(repoSettings.getGitFolder()+"/info/sparse-checkout");
                         if (!Files.isDirectory(infoFolder,LinkOption.NOFOLLOW_LINKS)){
+                            /*Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxrwx");
+                            FileAttribute<Set<PosixFilePermission>> fileAttributes = PosixFilePermissions.asFileAttribute(permissions);
+                            infoFolder = Files.createDirectory(infoFolder, fileAttributes);*/
                             infoFolder = Files.createDirectory(infoFolder);
                             LOG.info("Created directory {}", infoFolder.toAbsolutePath());
                         }
@@ -495,7 +494,7 @@ public class GermPluginController extends HttpController {
             }else{
                 addInfoMessage("SHA-1 is " + sha1);
             }
-            gitUtils.reset(resourcesRepoSettings, sha1);
+            gitUtils.reset(resourcesRepoSettings, sha1, pathToGit);
             addInfoMessage("Successfully reset to " + sha1);
         }
     }
