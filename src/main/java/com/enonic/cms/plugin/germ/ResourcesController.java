@@ -45,6 +45,10 @@ public class ResourcesController extends HttpController{
             response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
             return;
         }
+        if ("js".equals(fileType)){
+            response.setContentType("application/javascript");
+        }
+
         Helper.stream(ResourcesController.class.getResourceAsStream(fileName),response.getOutputStream());
     }
 
