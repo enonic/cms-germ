@@ -1,0 +1,26 @@
+
+<section data-th-fragment="settings-issuetrackerurl-form">
+    <form method="post"
+          data-th-action="${url + '/germ/' + requestPath}"
+          class="pure-form pure-form-stacked">
+        <legend>Issue tracker baseurl - <span class="smaller">integration with your issue management system</span></legend>
+        <fieldset>
+            <input type="hidden" name="cmd" value="setissuetrackerurl"/>
+            <input type="text" name="issuetrackerurl" data-th-value="${issuetrackerurl}" placeholder="http://issues/browse/"/>
+            <input type="submit" value="Set" class="pure-button pure-button-primary"/>
+        </fieldset>
+    </form>
+</section>
+
+<section data-th-fragment="settings-issuetrackerlinkpattern-form">
+    <form method="post"
+          data-th-action="${url + '/germ/' + requestPath}"
+          class="pure-form pure-form-stacked">
+        <legend>Issue tracker link pattern - <span class="smaller">integration with your issue management system</span></legend>
+        <fieldset>
+            <input type="hidden" name="cmd" value="setissuetrackerlinkpattern"/>
+            <input type="text" name="issuetrackerlinkpattern" data-th-value="${issuetrackerlinkpattern}" placeholder="([A-Z]{1,16}-[0-9]+)"/>
+            <input type="submit" value="Set" class="pure-button pure-button-primary"/>
+        </fieldset>
+    </form>
+</section>

@@ -28,7 +28,7 @@
             <td><span data-th-text="${commit.getCommitterIdent().getWhen()}"/></td>
             <td><span data-th-text="${commit.getCommitterIdent().getName()}"/></td>
             <td><span data-th-text="${commit.getCommitterIdent().getEmailAddress()}"/></td>
-            <td data-th-attr="data-jiralink='true'" class="comment" data-th-text="${commit.getFullMessage()}">No commit message</td>
+            <td data-th-attr="data-issuetrackerlink='true'" class="comment" data-th-text="${commit.getFullMessage()}">No commit message</td>
         </tr>
     </table>
 </section>

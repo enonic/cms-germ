@@ -35,9 +35,6 @@ import java.io.FilenameFilter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.*;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -68,8 +65,8 @@ public class GermPluginController extends HttpController {
         };
     }
 
-    RepoSettings pluginRepoSettings = new RepoSettings();
-    RepoSettings resourcesRepoSettings = new RepoSettings();
+    private final RepoSettings pluginRepoSettings = new RepoSettings();
+    private final RepoSettings resourcesRepoSettings = new RepoSettings();
 
     String pathToGit;
     String allowedAdminGroup;
@@ -336,7 +333,37 @@ public class GermPluginController extends HttpController {
                     config.setBoolean("core",null,"sparsecheckout",false);
                     config.save();
                     addInfoMessage("Disabled sparse-checkout for " + repoSettings.getGitFolder());
+                }else if ("setissuetrackerurl".equals(cmd)){
+                    String issuetrackerurl = pluginEnvironment.getCurrentRequest().getParameter("issuetrackerurl");
+                    //repoSettings.setIssueTrackerUrl(issuetrackerurl);
+                    LOG.info("Set issuetracker url for {}", repoSettings.getGitFolder());
+                    StoredConfig config = repository.getConfig();
+                    config.setString("germ", "workspace", "issuetrackerurl", issuetrackerurl);
+                    config.save();
+                    addInfoMessage("Added issuetracker url for " + repoSettings.getGitFolder());
+                }else if ("setissuetrackerlinkpattern".equals(cmd)) {
+                    String issuetrackerlinkpattern = pluginEnvironment.getCurrentRequest().getParameter("issuetrackerlinkpattern");
+                    //repoSettings.setIssueTrackerLinkPattern(issuetrackerlinkpattern);
+                    LOG.info("Set issuetracker link pattern for {}", repoSettings.getGitFolder());
+                    StoredConfig config = repository.getConfig();
+                    config.setString("germ", "workspace", "issuetrackerlinkpattern", issuetrackerlinkpattern);
+                    config.save();
+                    addInfoMessage("Added issuetracker link pattern for " + repoSettings.getGitFolder());
                 }
+
+                /*else if("setGeneralSetting".equals(cmd)){
+                    String generalsetting = pluginEnvironment.getCurrentRequest().getParameter("generalsetting");
+                    String generalsettingvalue = pluginEnvironment.getCurrentRequest().getParameter("generalsettingvalue");
+                    if (Strings.isNullOrEmpty(generalsetting) || Strings.isNullOrEmpty(generalsettingvalue)){
+                        return;
+                    }
+                    if ("issuetrackerurl".equals(generalsetting)){
+                        generalSettings.setIssueTrackerUrl(generalsettingvalue);
+                    }
+                    if ("issuetrackerlinkpattern".equals(generalsetting)){
+                        generalSettings.setIssueTrackerLinkPattern(generalsettingvalue);
+                    }
+                }*/
             }
         } catch (Exception e) {
             addErrorMessage(e.getMessage());
@@ -395,6 +422,16 @@ public class GermPluginController extends HttpController {
         } catch (Exception e) {
             LOG.info(e.getMessage());
         }
+
+        try{
+            StoredConfig config = gitUtils.getRepository(repositoryFolder).getConfig();
+            context.setVariable("issuetrackerurl", config.getString("germ", "workspace", "issuetrackerurl"));
+            context.setVariable("issuetrackerlinkpattern", config.getString("germ", "workspace", "issuetrackerlinkpattern"));
+
+        }catch (Exception e){
+
+        }
+
     }
 
     public void pluginsStatus(WebContext context) {
@@ -425,6 +462,32 @@ public class GermPluginController extends HttpController {
         context.setVariable("files", gitUtils.getRepositoryFiles(resourcesRepoSettings.getFolder()));
     }
 
+    public void resourcesSettings(WebContext context) {
+        GitUtils gitUtils = new GitUtils();
+
+        try {
+            Repository repository = gitUtils.getRepository(resourcesRepoSettings.getGitFolder());
+            runCmd(repository, resourcesRepoSettings, context);
+            resources(context);
+            addCommonContext(context,resourcesRepoSettings.getGitFolder());
+        } catch (Exception e) {
+            addWarningMessage(e.getMessage());
+        }
+    }
+
+    public void pluginsSettings(WebContext context) {
+        GitUtils gitUtils = new GitUtils();
+
+        try {
+            Repository repository = gitUtils.getRepository(pluginRepoSettings.getGitFolder());
+            runCmd(repository, pluginRepoSettings, context);
+            plugins(context);
+            addCommonContext(context,pluginRepoSettings.getGitFolder());
+        } catch (Exception e) {
+            addWarningMessage(e.getMessage());
+        }
+    }
+
 
     public void plugins(WebContext context) {
         GitUtils gitUtils = new GitUtils();
@@ -442,9 +505,8 @@ public class GermPluginController extends HttpController {
             context.setVariable("originUrl", gitUtils.getRemoteOrigin(pluginRepoSettings.getGitFolder()));
             context.setVariable("headCommit", config.getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
             context.setVariable("checkoutfiles", gitUtils.getRepositoryFiles(pluginRepoSettings.getFolder(), pluginsFilenameFilter));
-            context.setVariable("sparseCheckoutPath", pluginRepoSettings.getSparseCheckoutPath());
-            context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));
-
+            /*context.setVariable("sparseCheckoutPath", pluginRepoSettings.getSparseCheckoutPath());
+            context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));*/
         } catch (Exception e) {
             addErrorMessage(e.getMessage());
         }
@@ -466,8 +528,8 @@ public class GermPluginController extends HttpController {
             context.setVariable("gitDirectory", resourcesRepoSettings.getGitFolder());
             context.setVariable("originUrl", gitUtils.getRemoteOrigin(resourcesRepoSettings.getGitFolder()));
             context.setVariable("headCommit", config.getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
-            context.setVariable("sparseCheckoutPath", resourcesRepoSettings.getSparseCheckoutPath());
-            context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));
+            /*context.setVariable("sparseCheckoutPath", resourcesRepoSettings.getSparseCheckoutPath());
+            context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));*/
         } catch (Exception e) {
             addWarningMessage(e.getMessage());
         }

@@ -14,6 +14,10 @@
         data-th-class="${requestPath == 'resources/files' ? 'pure-menu-selected ' : ''} + 'menu-item-divided submenu'">
         <a data-th-href="${url + '/germ/resources/files'}">|_Files</a>
     </li>
+    <li data-th-if="${resourcesRepository!=null and resourcesRepository.getDirectory().isDirectory()}"
+        data-th-class="${requestPath == 'resources/settings' ? 'pure-menu-selected ' : ''} + 'menu-item-divided submenu'">
+        <a data-th-href="${url + '/germ/resources/settings'}">|_Settings</a>
+    </li>
     <li data-th-class="${requestPath == 'plugins' ? 'pure-menu-selected ' : ''} + 'menu-item-divided'">
         <a data-th-href="${url + '/germ/plugins'}">Plugins</a>
     </li>
@@ -28,6 +32,10 @@
     <li data-th-if="${resourcesRepository!=null and resourcesRepository.getDirectory().isDirectory()}"
         data-th-class="${requestPath == 'plugins/files' ? 'pure-menu-selected ' : ''} + 'menu-item-divided submenu'">
         <a data-th-href="${url + '/germ/plugins/files'}">|_Files</a>
+    </li>
+    <li data-th-if="${resourcesRepository!=null and resourcesRepository.getDirectory().isDirectory()}"
+        data-th-class="${requestPath == 'plugins/settings' ? 'pure-menu-selected ' : ''} + 'menu-item-divided submenu'">
+        <a data-th-href="${url + '/germ/plugins/settings'}">|_Settings</a>
     </li>
     <li data-th-class="${requestPath == 'expertmode' ? 'pure-menu-selected ' : ''} + 'menu-item-divided'">
         <a data-th-href="${url + '/germ/expertmode'}">Expertmode</a>

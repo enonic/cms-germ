@@ -4,6 +4,8 @@
         data-th-if="${!accessDenied}"
         id="expert-mode">
 
+    <h1 aria-level="4">Resources</h1>
+
     <form method="post"
           data-th-action="${url + '/germ/' + requestPath}"
           class="pure-form pure-form-stacked">
@@ -18,7 +20,7 @@
     </form>
 
     <form method="post" data-th-action="${url + '/germ/' + requestPath}" class="pure-form pure-form-stacked">
-        <legend>Git reset - <span class="smaller">reset current HEAD to the specified state</span></legend>
+        <legend>Git reset: <span class="smaller">reset current HEAD to the specified state</span></legend>
         <fieldset>
             <input type="hidden" name="cmd" value="reset"/>
             <input type="text" pattern=".{16,}" title="16 characters minimum" required="true" name="sha1"

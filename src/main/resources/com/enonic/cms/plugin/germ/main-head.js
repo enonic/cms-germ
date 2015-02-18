@@ -1,39 +1,38 @@
 window.onload = function(e){
 
-        var JiraLinksSettings,
-        JiraLinks = {
+        var IssuetrackerLinksSettings,
+        IssuetrackerLinks = {
         settings: {
-            jiraBaseUrl: 'http://issues',
             commitsComment: document.getElementById('commits'),
-            jiralinks: document.querySelectorAll('[data-jiralink]'),
-            jiraLinkPattern: new RegExp("([A-Z]{1,16}-[0-9]+)"),
-            jiraUrl: 'http://issues/browse/'
+            issuetrackerLinks: document.querySelectorAll('[data-issuetrackerlink]'),
+            issuetrackerLinkPattern: new RegExp(document.querySelector('body').getAttribute('data-germ-issuetrackerlinkpattern')),
+            issuetrackerUrl: document.querySelector('body').getAttribute('data-germ-issuetrackerurl')
         },
 
         init: function(){
-            JiraLinksSettings = this.settings;
-            this.createJIRALinks();
+            IssuetrackerLinksSettings = this.settings;
+            this.createIssuetrackerLinks();
             this.bindUIActions();
         },
 
         bindUIActions: function(){
-            JiraLinksSettings.commitsComment.addEventListener("click",function(e){
-                JiraLinks.resolveJiraLinks(e);
+            IssuetrackerLinksSettings.commitsComment.addEventListener("click",function(e){
+                IssuetrackerLinks.resolveIssuetrackerLinks(e);
             });
         },
-        createJIRALinks: function(){
+        createIssuetrackerLinks: function(){
             [].forEach.call(
-                JiraLinksSettings.jiralinks,
+                IssuetrackerLinksSettings.issuetrackerLinks,
                 function(el){
-                    var potentialJiraLinkText = el.textContent;
-                    if (JiraLinksSettings.jiraLinkPattern.test(potentialJiraLinkText)){
-                        var jiraIssue = JiraLinksSettings.jiraLinkPattern.exec(potentialJiraLinkText)[0];
+                    var potentialIssueLinkText = el.textContent;
+                    if (IssuetrackerLinksSettings.issuetrackerLinkPattern.test(potentialIssueLinkText)){
+                        var issuetrackerIssue = IssuetrackerLinksSettings.issuetrackerLinkPattern.exec(potentialIssueLinkText)[0];
                         var pNode = document.createElement("p");
                         var aNode = document.createElement("a");
-                        var aNodeText = document.createTextNode(jiraIssue);
+                        var aNodeText = document.createTextNode(issuetrackerIssue);
                         aNode.appendChild(aNodeText);
-                        aNode.title="View jira issue " + jiraIssue;
-                        aNode.href=JiraLinksSettings.jiraUrl+jiraIssue;
+                        aNode.title="View issues " + issuetrackerIssue;
+                        aNode.href=IssuetrackerLinksSettings.issuetrackerUrl+issuetrackerIssue;
                         pNode.appendChild(aNode);
                         el.insertBefore(pNode,el.firstChild);
                     }
@@ -42,10 +41,9 @@ window.onload = function(e){
 
 
         },
-        resolveJiraLinks: function(e){
+        resolveIssuetrackerLinks: function(e){
             var clickedEl = e.target;
-            console.log(clickedEl.textContent);
         }
     }
-    JiraLinks.init();
+    IssuetrackerLinks.init();
 }
