@@ -32,6 +32,9 @@ import java.util.*;
 public class GitUtils {
     Logger LOG = LoggerFactory.getLogger(GitUtils.class);
 
+    /*Transport command timeout in seconds*/
+    final int fetchCommandTimeout = 10000;
+
     public GitUtils(){
 
     }
@@ -121,7 +124,7 @@ public class GitUtils {
             UsernamePasswordCredentialsProvider credentialsProvider =
                     new UsernamePasswordCredentialsProvider(username,password);
             fetchResult = fetchCommand
-                    .setTimeout(1000)
+                    .setTimeout(fetchCommandTimeout)
                     .setCredentialsProvider(credentialsProvider)
                     .call();
         }else{
@@ -331,7 +334,7 @@ public class GitUtils {
     public String getHeadCommit(File repositoryFolder) throws Exception{
         Git git = getGitInstance(repositoryFolder);
         ObjectId head = git.getRepository().resolve("HEAD");
-        return head.getName();
+        return head.getName().substring(0,16);
     }
 
 }
