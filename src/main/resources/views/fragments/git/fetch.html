@@ -9,9 +9,9 @@
         <fieldset>
             <legend>Git fetch - <span class="smaller">download objects and refs from remote repository</span></legend>
             <input type="hidden" name="cmd" value="fetch"/>
-            <input type="text" name="gitusername" id="gitusername" placeholder="Enter git username"
+            <input autocomplete="on" type="text" name="gitusername" id="gitusername" placeholder="Enter git username"
                    data-th-value="${gitusername!=null ? gitusername : ''}"/>
-            <input type="password" name="gitpassword" id="gitpassword" placeholder="Enter git password"/>
+            <input type="password" autocomplete="off" name="gitpassword" id="gitpassword" placeholder="Enter git password"/>
             <input type="submit" value="Fetch remote origin" class="pure-button pure-button-primary"/>
         </fieldset>
     </form>

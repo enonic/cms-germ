@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head data-th-include="fragments/head :: common"/>
-<body data-th-attr="data-germ-issuetrackerurl=${issuetrackerurl},data-germ-issuetrackerlinkpattern=${issuetrackerlinkpattern}" >
+<body data-th-attr="data-germ-issuetrackerurl=${issuetrackerurl?issuetrackerurl:'http://your-issue-tracker-url/'},data-germ-issuetrackerlinkpattern=${issuetrackerlinkpattern}" >
 <div id="layout">
     <!-- Menu toggle -->
     <a href="#menu" id="menuLink" class="menu-link active">

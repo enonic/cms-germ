@@ -71,7 +71,7 @@ public class GitUtils {
 
     public void reset(RepoSettings repoSettings, String sha1, String pathToGit) throws IOException, GitAPIException, InterruptedException{
         Repository repository = getRepository(repoSettings.getGitFolder());
-        if (repository.getConfig().getBoolean("core",null,"sparsecheckout", false)){
+        if (pathToGit!=null && repository.getConfig().getBoolean("core",null,"sparsecheckout", false)){
             List<String> command = new ArrayList<String>();
             command.add("cmd.exe");
             command.add("/c");
@@ -328,5 +328,10 @@ public class GitUtils {
         return StringUtils.substringAfterLast(branch,"/");
     }
 
+    public String getHeadCommit(File repositoryFolder) throws Exception{
+        Git git = getGitInstance(repositoryFolder);
+        ObjectId head = git.getRepository().resolve("HEAD");
+        return head.getName();
+    }
 
 }

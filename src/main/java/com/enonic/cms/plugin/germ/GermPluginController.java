@@ -65,8 +65,8 @@ public class GermPluginController extends HttpController {
         };
     }
 
-    private final RepoSettings pluginRepoSettings = new RepoSettings();
-    private final RepoSettings resourcesRepoSettings = new RepoSettings();
+    public static final RepoSettings pluginRepoSettings = new RepoSettings();
+    public static final RepoSettings resourcesRepoSettings = new RepoSettings();
 
     String pathToGit;
     String allowedAdminGroup;
@@ -427,7 +427,6 @@ public class GermPluginController extends HttpController {
             StoredConfig config = gitUtils.getRepository(repositoryFolder).getConfig();
             context.setVariable("issuetrackerurl", config.getString("germ", "workspace", "issuetrackerurl"));
             context.setVariable("issuetrackerlinkpattern", config.getString("germ", "workspace", "issuetrackerlinkpattern"));
-
         }catch (Exception e){
 
         }
@@ -468,7 +467,7 @@ public class GermPluginController extends HttpController {
         try {
             Repository repository = gitUtils.getRepository(resourcesRepoSettings.getGitFolder());
             runCmd(repository, resourcesRepoSettings, context);
-            resources(context);
+            //resources(context);
             addCommonContext(context,resourcesRepoSettings.getGitFolder());
         } catch (Exception e) {
             addWarningMessage(e.getMessage());
@@ -481,7 +480,7 @@ public class GermPluginController extends HttpController {
         try {
             Repository repository = gitUtils.getRepository(pluginRepoSettings.getGitFolder());
             runCmd(repository, pluginRepoSettings, context);
-            plugins(context);
+            //plugins(context);
             addCommonContext(context,pluginRepoSettings.getGitFolder());
         } catch (Exception e) {
             addWarningMessage(e.getMessage());
