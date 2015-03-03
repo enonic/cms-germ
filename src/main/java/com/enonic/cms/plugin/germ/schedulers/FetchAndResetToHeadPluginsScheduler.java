@@ -21,6 +21,7 @@ public class FetchAndResetToHeadPluginsScheduler extends TaskHandler{
     PluginConfig pluginConfig;
     String gitSchedulerUsername;
     String gitSchedulerPassword;
+    String salt;
 
     File folderWithPlugins;
     File gitFolderWithPlugins;
@@ -31,8 +32,7 @@ public class FetchAndResetToHeadPluginsScheduler extends TaskHandler{
         this.pluginConfig = pluginConfig.get(0);
         folderWithPlugins = new File(this.pluginConfig.getString("folderWithResources"));
         gitFolderWithPlugins = new File(folderWithPlugins + "/.git");
-        this.gitSchedulerUsername = this.pluginConfig.getString("gitSchedulerUsername");
-        this.gitSchedulerPassword = this.pluginConfig.getString("gitSchedulerPassword");
+        this.salt = this.pluginConfig.getString("salt");
     }
 
     Logger LOG = LoggerFactory.getLogger(FetchAndResetToHeadPluginsScheduler.class);
@@ -40,11 +40,9 @@ public class FetchAndResetToHeadPluginsScheduler extends TaskHandler{
     @Override
     public void execute(Properties properties) throws Exception {
         LOG.info("execute FetchAndResetToHeadPluginsScheduler");
-        gitSchedulerUsername = properties.getProperty("gitusername", gitSchedulerUsername);
-        gitSchedulerPassword = properties.getProperty("gitpassword", gitSchedulerPassword);
         CommonSchedulerTools commonSchedulerTools = new CommonSchedulerTools();
         commonSchedulerTools.executeFetchAndReset(gitFolderWithPlugins,
-                GermPluginController.pluginRepoSettings, gitSchedulerUsername, gitSchedulerPassword);
+                GermPluginController.pluginRepoSettings);
     }
 
 

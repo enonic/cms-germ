@@ -7,6 +7,8 @@ import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
@@ -17,6 +19,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.Date;
+import java.util.Random;
 
 /**
  * User: rfo
@@ -25,6 +29,30 @@ import java.nio.channels.WritableByteChannel;
  */
 public class Helper {
 
+    public static String encryptPassword(String password){
+        BASE64Encoder encoder = new BASE64Encoder();
+        Random random = new Random((new Date()).getTime());
+        // let's create some dummy salt
+        byte[] salt = new byte[8];
+        random.nextBytes(salt);
+        return encoder.encode(salt)+
+                encoder.encode(password.getBytes());
+    }
+
+    public static String decryptPassword(String encryptKey){
+    // let's ignore the salt
+        if (encryptKey.length() > 12) {
+            String cipher = encryptKey.substring(12);
+            BASE64Decoder decoder = new BASE64Decoder();
+            try {
+                return new String(decoder.decodeBuffer(cipher));
+            } catch (IOException e) {
+                //  throw new InvalidImplementationException(
+                //    "Failed to perform decryption for key ["+encryptKey+"]",e);
+            }
+        }
+        return null;
+    }
 
     public static void serveCss(String css, HttpServletResponse response) throws Exception {
         InputStream in = GermPluginController.class.getResourceAsStream(css);

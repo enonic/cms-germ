@@ -2,6 +2,7 @@ package com.enonic.cms.plugin.germ.schedulers;
 
 import com.enonic.cms.plugin.germ.model.RepoSettings;
 import com.enonic.cms.plugin.germ.utils.GitUtils;
+import com.enonic.cms.plugin.germ.utils.Helper;
 import com.google.common.base.Strings;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.TrackingRefUpdate;
@@ -20,16 +21,18 @@ public class CommonSchedulerTools {
     long logGitExecutionsSlowerThanMilliseconds = 100;
 
     protected final void executeFetchAndReset(File gitFolder,
-            RepoSettings repoSettings, String gitSchedulerUsername, String gitSchedulerPassword) throws Exception{
-
-        if (Strings.isNullOrEmpty(gitSchedulerUsername) || Strings.isNullOrEmpty(gitSchedulerPassword)){
-            LOG.warn("Git scheduler user/password not configured in germ.properties, cannot fetch from origin. Aborting..");
-            return;
-        }
-        long startTime = System.currentTimeMillis();
+            RepoSettings repoSettings) throws Exception{
 
         GitUtils gitUtils = new GitUtils();
+        String gitSchedulerUsername = gitUtils.getGitConfigString(repoSettings.getGitFolder(), "germ", "workspace", "gitschedulerusername");
+        String gitSchedulerPassword = gitUtils.getGitConfigString(repoSettings.getGitFolder(), "germ", "workspace", "gitschedulerpassword");
 
+        if (Strings.isNullOrEmpty(gitSchedulerUsername) || Strings.isNullOrEmpty(gitSchedulerPassword)){
+            LOG.warn("Git scheduler user/password not set in germ settings, cannot fetch from origin. Aborting..");
+            return;
+        }
+        gitSchedulerPassword = Helper.decryptPassword(gitSchedulerPassword);
+        long startTime = System.currentTimeMillis();
 
         FetchResult fetchResult = gitUtils.fetch(gitFolder, gitSchedulerUsername, gitSchedulerPassword);
 
