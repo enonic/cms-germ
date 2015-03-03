@@ -11,19 +11,17 @@ import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class ResourcesController extends HttpController{
+public class GermResourcesController extends HttpController{
 
-    Logger LOG = LoggerFactory.getLogger(ResourcesController.class);
+    Logger LOG = LoggerFactory.getLogger(GermResourcesController.class);
     Map<String,String> supportedContentTypes = ImmutableMap.of("css","text/css","js","text/js","html","text/html","png","image/png");
 
-    public ResourcesController() throws Exception {
+    public GermResourcesController() throws Exception {
         setDisplayName("Plugin Resources Controller");
-        setUrlPatterns(new String[]{"/admin/site/[0-9].*_resources.*"});
+        setUrlPatterns(new String[]{"/admin/site/[\\d].*_germresources.*"});
         setPriority(9);
     }
 
@@ -49,7 +47,7 @@ public class ResourcesController extends HttpController{
             response.setContentType("application/javascript");
         }
 
-        Helper.stream(ResourcesController.class.getResourceAsStream(fileName),response.getOutputStream());
+        Helper.stream(GermResourcesController.class.getResourceAsStream(fileName),response.getOutputStream());
     }
 
 }

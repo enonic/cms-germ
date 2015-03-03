@@ -458,7 +458,7 @@ public class GermPluginController extends HttpController {
         try {
             Repository repository = gitUtils.getRepository(resourcesRepoSettings.getGitFolder());
             runCmd(repository, resourcesRepoSettings, context);
-            //resources(context);
+            context.setVariable("gitschedulerusername", gitUtils.getGitConfigString(resourcesRepoSettings.getGitFolder(), "germ", "workspace", "gitschedulerusername"));
             addCommonContext(context, resourcesRepoSettings.getGitFolder());
         } catch (Exception e) {
             addWarningMessage(e.getMessage());
@@ -471,7 +471,7 @@ public class GermPluginController extends HttpController {
         try {
             Repository repository = gitUtils.getRepository(pluginRepoSettings.getGitFolder());
             runCmd(repository, pluginRepoSettings, context);
-            //plugins(context);
+            context.setVariable("gitschedulerusername", gitUtils.getGitConfigString(resourcesRepoSettings.getGitFolder(), "germ", "workspace", "gitschedulerusername"));
             addCommonContext(context, pluginRepoSettings.getGitFolder());
         } catch (Exception e) {
             addWarningMessage(e.getMessage());

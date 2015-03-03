@@ -34,11 +34,11 @@
           data-th-action="${url + '/germ/' + requestPath}"
           class="pure-form pure-form-stacked">
         <fieldset>
-            <legend>Git scheduler (fetch+reset) authentication - <span class="smaller">enter username and password to be used in admin configured scheduler (nb: will be stored unencrypted in .git/config on server for now)</span></legend>
+            <legend>Git scheduler (fetch+reset) authentication - <span class="smaller">enter username and password to be used in admin configured scheduler</span></legend>
             <input type="hidden" name="cmd" value="setschedulerauthentication"/>
             <input autocomplete="off" type="text" name="gitschedulerusername" id="gitschedulerusername" placeholder="Enter git username"
                    data-th-value="${gitschedulerusername!=null ? gitschedulerusername : ''}"/>
-            <input type="password" autocomplete="off" name="gitschedulerpassword" id="gitschedulerpassword" placeholder="Enter git password"/>
+            <input type="password" autocomplete="off" name="gitschedulerpassword" id="gitschedulerpassword" placeholder="git password"/>
             <input type="submit" value="Store credentials" class="pure-button pure-button-primary"/>
         </fieldset>
     </form>
