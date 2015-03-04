@@ -21,8 +21,8 @@ public class GermResourcesController extends HttpController{
 
     public GermResourcesController() throws Exception {
         setDisplayName("Plugin Resources Controller");
-        setUrlPatterns(new String[]{"/admin/site/[\\d].*_germresources.*"});
-        setPriority(9);
+        setUrlPatterns(new String[]{"/admin/site/[\\d]*/_germresources.*"});
+        setPriority(2);
     }
 
     @Override

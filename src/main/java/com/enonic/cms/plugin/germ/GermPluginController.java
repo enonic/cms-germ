@@ -15,7 +15,9 @@ import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.Status;
-import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.FetchResult;
 import org.jdom.Document;
@@ -34,7 +36,10 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -67,7 +72,6 @@ public class GermPluginController extends HttpController {
     String pathToGit;
     String allowedAdminGroup;
     String allowedUserGroup;
-    String salt;
 
     @Autowired
     Client client;
@@ -88,9 +92,8 @@ public class GermPluginController extends HttpController {
         //TODO: Strange hack with List<PluginConfig> here, srs is investigating
         this.pluginConfig = pluginConfig.get(0);
         this.needsAuthentication = this.pluginConfig.getBoolean("needsAuthentication", true);
-        this.allowedAdminGroup = this.pluginConfig.getString("allowedAdminGroup", "Germ Administrators");
-        this.allowedUserGroup = this.pluginConfig.getString("allowedUserGroup", "Germ Users");
-        this.salt = this.pluginConfig.getString("salt");
+        this.allowedAdminGroup = this.pluginConfig.getString("allowedAdminGroup");
+        this.allowedUserGroup = this.pluginConfig.getString("allowedUserGroup");
 
         resourcesRepoSettings.setFolder(new File(this.pluginConfig.getString("folderWithResources")));
         resourcesRepoSettings.setGitFolder(new File(resourcesRepoSettings.getFolder() + "/.git"));
@@ -110,6 +113,7 @@ public class GermPluginController extends HttpController {
     private TemplateEngineProvider templateEngineProvider;
 
     Logger LOG = LoggerFactory.getLogger(GermPluginController.class);
+
     static ConcurrentHashMap<String, List> messages = new ConcurrentHashMap<String, List>();
 
     private void attemptAuthentication() {
@@ -346,7 +350,7 @@ public class GermPluginController extends HttpController {
                     config.setString("germ", "workspace", "issuetrackerlinkpattern", issuetrackerlinkpattern);
                     config.save();
                     addInfoMessage("Added issuetracker link pattern for " + repoSettings.getGitFolder());
-                }else if ("setschedulerauthentication".equals(cmd)) {
+                } else if ("setschedulerauthentication".equals(cmd)) {
                     String gitschedulerusername = pluginEnvironment.getCurrentRequest().getParameter("gitschedulerusername");
                     String gitschedulerpassword = pluginEnvironment.getCurrentRequest().getParameter("gitschedulerpassword");
                     StoredConfig config = repository.getConfig();
@@ -497,6 +501,7 @@ public class GermPluginController extends HttpController {
             context.setVariable("checkoutfiles", gitUtils.getRepositoryFiles(pluginRepoSettings.getFolder(), pluginsFilenameFilter));
             /*context.setVariable("sparseCheckoutPath", pluginRepoSettings.getSparseCheckoutPath());
             context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));*/
+            context.setVariable("hasUncommittedChanges", gitUtils.getStatus(pluginRepoSettings.getGitFolder()).hasUncommittedChanges());
         } catch (Exception e) {
             addErrorMessage(e.getMessage());
         }
@@ -520,6 +525,7 @@ public class GermPluginController extends HttpController {
             context.setVariable("headCommit", config.getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
             /*context.setVariable("sparseCheckoutPath", resourcesRepoSettings.getSparseCheckoutPath());
             context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));*/
+            context.setVariable("hasUncommittedChanges", gitUtils.getStatus(resourcesRepoSettings.getGitFolder()).hasUncommittedChanges());
         } catch (Exception e) {
             addWarningMessage(e.getMessage());
         }
