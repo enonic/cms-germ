@@ -1,4 +1,7 @@
 <ul data-th-fragment="top">
+    <!--<li data-th-class="${requestPath == 'germ/logout' ? 'pure-menu-selected ' : ''} + 'menu-item-divided'">
+        <a data-th-href="${url + '/germ/logout'}" data-th-text=" ${'Logout ' + germusername}"/>
+    </li>-->
     <li data-th-class="${requestPath == 'resources' ? 'pure-menu-selected ' : ''} + 'menu-item-divided'">
         <a data-th-href="${url + '/germ/resources'}">Resources</a>
     </li>
@@ -7,7 +10,7 @@
         <a data-th-href="${url + '/germ/resources/remote'}">|_Remote / Fetch</a>
     </li>
     <li data-th-if="${resourcesRepository!=null and resourcesRepository.getDirectory().isDirectory()}"
-        data-th-class="${requestPath == 'resources/status' ? 'pure-menu-selected ' : ''} + ${hasUncommittedChanges ? 'attention ' : ''} + 'menu-item-divided submenu'">
+        data-th-class="${requestPath == 'resources/status' ? 'pure-menu-selected ' : ''} + ${requestPath == 'resources' and status!=null and not status.isClean() ? 'attention ' : ''} + 'menu-item-divided submenu'">
         <a data-th-href="${url + '/germ/resources/status'}">|_Status</a>
     </li>
     <li data-th-if="${resourcesRepository!=null and resourcesRepository.getDirectory().isDirectory()}"
@@ -26,7 +29,7 @@
         <a data-th-href="${url + '/germ/plugins/remote'}">|_Remote / Fetch</a>
     </li>
     <li data-th-if="${pluginsRepository!=null and pluginsRepository.getDirectory().isDirectory()}"
-        data-th-class="${requestPath == 'plugins/status' ? 'pure-menu-selected ' : ''} + ${hasUncommittedChanges ? 'attention ' + 'menu-item-divided submenu'">
+        data-th-class="${requestPath == 'plugins/status' ? 'pure-menu-selected ' : ''} + ${requestPath == 'plugins' and status!=null and not status.isClean() ? 'attention ' : ''} + 'menu-item-divided submenu'">
         <a data-th-href="${url + '/germ/plugins/status'}">|_Status</a>
     </li>
     <li data-th-if="${resourcesRepository!=null and resourcesRepository.getDirectory().isDirectory()}"

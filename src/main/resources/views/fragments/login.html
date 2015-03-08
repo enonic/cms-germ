@@ -3,7 +3,7 @@
           data-th-action="${url + '/germ/' + requestPath}"
           class="pure-form pure-form-stacked">
         <fieldset>
-            <legend>Authentication</legend>
+            <legend>Authentication - <span class="smaller">use userstore\username if not in default userstore</span></legend>
             <input type="hidden" name="cmd" value="authenticate"/>
             <input type="text" name="germusername" id="germusername" placeholder="Enter germ username"
                    data-th-value="${germusername!=null ? germusername : ''}"/>

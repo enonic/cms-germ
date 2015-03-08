@@ -70,8 +70,8 @@ public class GermPluginController extends HttpController {
     public static final RepoSettings resourcesRepoSettings = new RepoSettings();
 
     String pathToGit;
-    String allowedAdminGroup;
-    String allowedUserGroup;
+    String allowedAdminGroupKey;
+    String allowedUserGroupKey;
 
     @Autowired
     Client client;
@@ -92,8 +92,8 @@ public class GermPluginController extends HttpController {
         //TODO: Strange hack with List<PluginConfig> here, srs is investigating
         this.pluginConfig = pluginConfig.get(0);
         this.needsAuthentication = this.pluginConfig.getBoolean("needsAuthentication", true);
-        this.allowedAdminGroup = this.pluginConfig.getString("allowedAdminGroup");
-        this.allowedUserGroup = this.pluginConfig.getString("allowedUserGroup");
+        this.allowedAdminGroupKey = this.pluginConfig.getString("allowedAdminGroupKey");
+        this.allowedUserGroupKey = this.pluginConfig.getString("allowedUserGroupKey");
 
         resourcesRepoSettings.setFolder(new File(this.pluginConfig.getString("folderWithResources")));
         resourcesRepoSettings.setGitFolder(new File(resourcesRepoSettings.getFolder() + "/.git"));
@@ -153,21 +153,24 @@ public class GermPluginController extends HttpController {
 
         String username = client.getUserName();
         Document userContext = client.getUserContext();
-        Helper.prettyPrint(userContext);
         Boolean adminGroupMembership = false;
+        Boolean userGroupMembership = false;
 
         if (needsAuthentication) {
             try {
-                Element adminEl = ((Element) XPath.selectSingleNode(userContext, "//user/memberships/group[name='" + this.allowedAdminGroup + "']"));
+                Element adminEl = ((Element) XPath.selectSingleNode(userContext, "//user/memberships/group[@key='" + this.allowedAdminGroupKey + "']"));
                 if (adminEl != null) {
                     adminGroupMembership = new Boolean(adminEl.getAttributeValue("direct-membership"));
+                }
+                Element userEl = ((Element) XPath.selectSingleNode(userContext, "//user/memberships/group[@key='" + this.allowedUserGroupKey + "']"));
+                if (userEl != null) {
+                    userGroupMembership = new Boolean(userEl.getAttributeValue("direct-membership"));
                 }
             } catch (Exception e) {
                 LOG.info("Access denied " + e.getMessage());
             }
             LOG.info("*********************Username************************");
             LOG.info(client.getUserName());
-            Helper.prettyPrint(client.getUserContext());
         }
 
 
@@ -183,7 +186,7 @@ public class GermPluginController extends HttpController {
         if (needsAuthentication && !adminGroupMembership) {
             addErrorMessage("Access denied");
             context.setVariable("accessDenied", true);
-        } else {
+        }else {
             context.setVariable("accessDenied", false);
             addRequestPathContext(requestPath, context);
         }
@@ -199,6 +202,7 @@ public class GermPluginController extends HttpController {
             addErrorMessage(e.getMessage());
             templateEngineProvider.get().process("errors/404", context, response.getWriter());
         }
+        client.logout();
     }
 
     public void runCmd(Repository repository, RepoSettings repoSettings, WebContext context) {
@@ -426,6 +430,10 @@ public class GermPluginController extends HttpController {
 
         }
 
+        if (!"anonymous".equals(client.getUserName())){
+            context.setVariable("germusername", client.getUserName());
+        }
+
     }
 
     public void pluginsStatus(WebContext context) {
@@ -501,7 +509,7 @@ public class GermPluginController extends HttpController {
             context.setVariable("checkoutfiles", gitUtils.getRepositoryFiles(pluginRepoSettings.getFolder(), pluginsFilenameFilter));
             /*context.setVariable("sparseCheckoutPath", pluginRepoSettings.getSparseCheckoutPath());
             context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));*/
-            context.setVariable("hasUncommittedChanges", gitUtils.getStatus(pluginRepoSettings.getGitFolder()).hasUncommittedChanges());
+            //context.setVariable("hasUncommittedChanges", gitUtils.getStatus(pluginRepoSettings.getGitFolder()).hasUncommittedChanges());
         } catch (Exception e) {
             addErrorMessage(e.getMessage());
         }
@@ -525,7 +533,7 @@ public class GermPluginController extends HttpController {
             context.setVariable("headCommit", config.getString("germ", "workspace", gitUtils.replaceIllegalGitConfCharacters(repository.getBranch())));
             /*context.setVariable("sparseCheckoutPath", resourcesRepoSettings.getSparseCheckoutPath());
             context.setVariable("sparseCheckoutActivated",config.getBoolean("core", "sparsecheckout", false));*/
-            context.setVariable("hasUncommittedChanges", gitUtils.getStatus(resourcesRepoSettings.getGitFolder()).hasUncommittedChanges());
+            //context.setVariable("hasUncommittedChanges", gitUtils.getStatus(resourcesRepoSettings.getGitFolder()).hasUncommittedChanges());
         } catch (Exception e) {
             addWarningMessage(e.getMessage());
         }
