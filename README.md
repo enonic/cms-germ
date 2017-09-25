@@ -1,4 +1,5 @@
 #germ-plugin
+
 G.E.R.M - Git Enonic Release Management - A plugin that connects Enonic CMS to Git, and allows to pull code directly from any
 git remote into CMS_HOME resources and plugin folders. Requires that git is installed on the serer.
 
@@ -9,6 +10,22 @@ Status: BETA.
 Ready for testing, all core functionality in place: add remote, fetch, reset, status.
 
 Tested on Enonic CMS 4.7.x
+
+##Build
+
+mvn install
+
+##Install
+
+Create germ.properties file in plugins folder and add these properties:
+    
+    #Key of admin group with germ access from admin (inspect html to get key)
+    allowedAdminGroupKey=F6D7DBBA4A714DD2DBC207C0E98B555D39214733
+    #These should point to folder where plugins / resources is checked out
+    folderWithPlugins=${cms.home}/plugins
+    folderWithResources=${cms.home}/germresources
+
+##Germ process
 
 More on GERM here:
 https://enonic.com/en/docs/enonic-cms-47?page=Development+Process+-+GERM

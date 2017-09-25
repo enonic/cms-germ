@@ -30,7 +30,7 @@ public class FetchAndResetToHeadPluginsScheduler extends TaskHandler{
     public void setPluginConfig(List<PluginConfig> pluginConfig) {
         //TODO: Strange hack with List<PluginConfig> here, srs is investigating
         this.pluginConfig = pluginConfig.get(0);
-        folderWithPlugins = new File(this.pluginConfig.getString("folderWithResources"));
+        folderWithPlugins = new File(this.pluginConfig.getString("folderWithPlugins"));
         gitFolderWithPlugins = new File(folderWithPlugins + "/.git");
         this.salt = this.pluginConfig.getString("salt");
     }
