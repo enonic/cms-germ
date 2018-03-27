@@ -1,5 +1,8 @@
 #germ-plugin
 
+#NB Important note about github.com repos with GERM.
+There has been some changes regarding security on github.com regarding fetching code with username and password over https. Therefore the Germ jgit client code cannot check out code from github anymore. The reccommended approach is to use another git repository provider, I can reccommend bitbucket, which as free private repositories up to a certain number of collaborators.
+
 G.E.R.M - Git Enonic Release Management - A plugin that connects Enonic CMS to Git, and allows to pull code directly from any
 git remote into CMS_HOME resources and plugin folders. Requires that git is installed on the serer.
 
